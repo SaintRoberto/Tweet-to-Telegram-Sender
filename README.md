@@ -1,6 +1,8 @@
 # 🐦 Twitter Telegram Bot
 
-A Python bot that scrapes tweets from **Nitter**, stores them in **MongoDB**, and sends new tweet alerts to a **Telegram channel** — all without using the official Twitter API.
+Scraping tweets has become increasingly difficult without paying high API fees or relying on third-party services like Nitter. However, since Nitter often imposes timeouts and access limits, this project introduces a workaround using randomized HTTP headers to maintain stable scraping.
+
+This Python bot scrapes tweets from Nitter, stores them in MongoDB, and sends new tweet alerts to a Telegram channel — all without using the official Twitter API.
 
 
 ## 📸 Preview
