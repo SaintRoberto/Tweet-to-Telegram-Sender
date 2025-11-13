@@ -9,7 +9,7 @@ A Python bot that scrapes tweets from **Nitter**, stores them in **MongoDB**, an
 
 ## 📸 Preview
 
-![Twitter Telegram Bot Preview](assets/preview.png)
+![Twitter Telegram Bot Preview](assets/img.png)
 *An overview of the bot’s scraping and alert process.*
 
 ---
@@ -113,8 +113,8 @@ bot.tg_sender(data)
 ```
 twitter-telegram-bot/
 │
-├── assets/preview.png     # Image or flow diagram
-├── bot.py                 # Main bot logic
+├── assets/img.png     # Image or flow diagram
+├── main.py                 # Main bot logic
 ├── requirements.txt       # Dependencies
 └── README.md              # Documentation
 ```
@@ -135,16 +135,3 @@ twitter-telegram-bot/
 
 You can schedule the bot to run periodically using **cron** or a background task:
 
-```bash
-*/5 * * * * /usr/bin/python3 /path/to/your/script.py >> /path/to/log.txt 2>&1
-```
-
----
-
-## 📄 License
-
-Licensed under the **MIT License** — free for personal or commercial use.
-
----
-
-Would you like me to make the README support **dark/light mode images** (so the image changes automatically based on GitHub theme)?
