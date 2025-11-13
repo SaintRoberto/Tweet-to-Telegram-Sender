@@ -1,359 +1,193 @@
-# importing libraries and packages
-from bs4 import BeautifulSoup
-from datetime import datetime
-import telebot
-import time
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
-import twitter
-import requests
 import os
-from twitter.scraper import Scraper
-import shutil
+import time
 import json
+import telebot
+import requests
+from datetime import datetime, timedelta
+from pymongo import MongoClient
+from telebot import formatting
+from bs4 import BeautifulSoup
+from pymongo.server_api import ServerApi
+
+
+# FOR THE HEADERS
+from datetime import datetime
+import secrets
+import base64
 
 
 
-API = os.environ['API']
-ID = "" # channel ID
-bot = telebot.TeleBot(API)
-URL = os.environ['URL']
+class TwitterTelegramBot:
+    def __init__(self):
+        # Environment variables
+        self.api_key = os.environ['API']
+        self.channel_id = os.environ["CHANNEL_ID"]
+        self.mongo_url = os.environ['MONGODB_URI']
+        
+        # Initialize bot and database
+        self.bot = telebot.TeleBot(self.api_key)
+        self.client = MongoClient(self.mongo_url, server_api=ServerApi('1'))
+        self.db = self.client['tweet_api']
+        self.collection = self.db['tweetcollection']
+        
+        # Twitter scraping cookies
+        self.headers = self.generate_headers()
 
 
+    def generate_headers(self):
+        # Current GMT time in HTTP-date format
+        date_str = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
+        
+        # Generate a fake cookie token
+        token = secrets.token_hex(16)  # 32-char hex
+        cookie = f"tiekoetter.com-cookie-verification={token}"
+        
+        return {
+            "content-type": "text/html;charset=utf-8",
+            "content-security-policy": (
+                "default-src 'none'; script-src 'self' 'unsafe-inline'; "
+                "img-src 'self' https://*.tiekoetter.cloud; "
+                "style-src 'self' 'unsafe-inline'; font-src 'self' data:; "
+                "connect-src 'self' https://*.twimg.com"
+            ),
+            "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+            "referrer-policy": "no-referrer",
+            "permissions-policy": "geolocation=(), microphone=(), camera=()",
+            "x-content-type-options": "nosniff",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "1; mode=block",
+            "date": date_str,
+            "x-test-cookie": cookie,
+        }
 
-cookies = [{"ct0": os.environ["CT0"], "auth_token": os.environ["AUTH0"]},
- {"ct0": os.environ["CT1"], "auth_token": os.environ["AUTH1"]},]
+    def get_values(self, values):
+        """Generator function for cycling through values."""
+        index = 0
+        while True:
+            yield values[index]
+            index = (index + 1) % len(values)
 
-def get_values(values):
-  index = 0
-  while True:
-      yield values[index]
-      index = (index + 1) % len(values)
-
-
-values_generator = get_values(cookies)
-
-def get_mongo():
-    client = MongoClient(URL, server_api=ServerApi('1'))
-    try:
-        # Access the database and collection
-        db = client['name']
-        collection = db['collection']
-
-        # Retrieve a single document from the collection based on the query
-        document = collection.find_one()
-        return document
-
-    except Exception as e:
-        print(f"Error connecting to MongoDB: {e}")
-        return None
-
-    finally:
-        # Close the connection in a finally block to ensure it is always closed
-        client.close()
-
-
-
-def mongo_update(files, remove=False, set_empty=False):
-    """
-    files: dict, Json ; defines the json or dictionary to be updated
-    remove: str ; defines the keys to be removed. If you want to remove a key inside a key, separate the keys with a dot.
-    set_empty: bool ; will remove all data in the collection
-    """
-    try:
-        client = MongoClient(URL, server_api=ServerApi('1'))
-        db = client['name']
-        collection = db['collection']
-        document = collection.find_one()
-
-        # Exclude '_id' field from the update query
-        files_without_id = files.copy()
-        files_without_id.pop('_id', None)
-
-        if remove:
-            keys = remove.split('.')
-            nested_dict = data
-            for key in keys[:-1]:
-                nested_dict = nested_dict[key]
-            del nested_dict[keys[-1]]
-        if set_empty:
-            for key in files_without_id:
-                collection.update_one({"_id": document["_id"]}, {"$unset": {key: ""}})
-        else:
-            update_query = {"$set": files_without_id}
-            collection.update_one({"_id": document["_id"]}, update_query)
-
-        # Return the modified files dictionary
-        return files_without_id
-    except Exception as e:
-        print(f"Error updating document: {e}")
-    finally:
-        client.close()
+    def report(self, message):
+        """Send a message to Telegram."""
+        try:
+            self.bot.send_message(chat_id=self.channel_id, text=message, parse_mode='MarkdownV2')
+            return True
+        except Exception as e:
+            print(f"Failed to send message: {e}")
+            return False
 
 
-def report(message, channel_id=ID):
-
-    try:
-      bot.send_message(chat_id=channel_id, text=message, parse_mode='MarkdownV2')
-    except Exception as e:
-        print(f"Failed to send message: {e}")
-
-
-
-
-def commands():    
-    try:
-      data = get_mongo()
-      username = [i for i in data["usernames"] if data["usernames"][i]["Active"]]
-
-    except Exception as e:
-      print(f"Error reading JSON file: {e}")
-    @bot.message_handler(commands=['start'])
-    def handle_start(message):
-        bot.reply_to(message, "Hello! I'm your Telebtot. How can I assist you?")
-
-    @bot.message_handler(commands=['help'])
-    def handle_help(message):
-        bot.reply_to(message, "Here are the available commands:\n"
-                              "/start - Start the bot\n"
-                              "/help - Get help")
-
-    @bot.message_handler(func=lambda message: True)
-    def handle_all_other_messages(message):
-        bot.reply_to(message, "I'm sorry, I don't understand that command. "
-                              "Type /help to see the available commands.")
-
-    @bot.channel_post_handler(commands=['start'])
-    def handle_channel_start(message):
-        bot.reply_to(message, "Hello! I'm Doff bot . I will send new tweet from a useraccount to a telegram.")
-
-    @bot.channel_post_handler(commands=['help'])
-    def handle_channel_help(message):
-        bot.reply_to(message, f"""    Here are the available commands:
-/add <@username> - add a username to the list
-/rem <@username> - remove a username from the list
-/del <@username> - permanently delete a username from the list
-/reset - add the removed usernames back to the working list
-/ls - list all users in the list
-/replies {data['replies']} - include Replies?""")
-
-
-    @bot.channel_post_handler(commands=['add'])
-    def handle_channel_add(message):
-        if message.text.startswith('/add ') and message.text[5:].startswith('@'):
-            if message.text[5:] in username:
-                bot.reply_to(message, f'{message.text[5:]} User is already included...')
-            elif message.text[5:] in data["usernames"]:
-                bot.reply_to(message, f'{message.text[5:]} User is Activated...')
-                data["usernames"][message.text[5:]]["Active"] = True
-                mongo_update(data, remove=False, set_empty=False)
-
-            else:
+    def get_tweet_by_userid(self, usernames, replies=True):
+        """Retrieve tweets from specified usernames."""
+        all_tweets = []
+        try:
+            for username in usernames:
+                tweets_list = []
                 try:
-                    user_name = message.text[6:]
-                    print(user_name)
-                    scraper = Scraper(cookies=cookies[0])
-                    user = scraper.users([user_name])
-                    #print(user)
-                    user_id = user[0]["data"]["user"]["result"]["rest_id"]
-                    #report(user_id)
-                    data["usernames"][message.text[5:]] = {
-                        "created_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        "recent_tweets": [],
-                        "total_tweet" : 0,
-                        "day_tweets" :0,
-                        "Active" : True,
-                        "User_ID" : user_id
-                    }
-    
-                    bot.reply_to(message, f'{message.text[5:]} is added to your account list\n-------╔( •̀ з •́)╝╚(•̀ ▪ •́ )╗-------')
-    
-                    #mongo_update(data)
-                except Exception as e:
-                    bot.reply_to(message, f'{message.text[5:]} is not added please try again')
-                    print(e)
+                    # Construct the correct URL based on 'replies' flag
+                    url = f"https://nitter.tiekoetter.com/{username}"
+                    if replies:
+                        url += "/with_replies"
 
-    @bot.channel_post_handler(commands=['rem'])
-    def handle_channel_rem(message):
-        if message.text.startswith('/rem ') and message.text[5:].startswith('@'):
-            if message.text[5:] not in username:
-                bot.reply_to(message, f'{message.text[5:]} User is not included...')
-            else:
-                data["usernames"][message.text[5:]]["Active"] = False
-                bot.reply_to(message, f'{message.text[5:]} is removed\n-------〵(•ʘ̥ᴗʘ̥ •〵)-------')
-                mongo_update(data, remove=False, set_empty=False)
+                    print(f"Fetching tweets for user: {username} from URL: {url}")
 
+                    # Use the session for requests
+                    response = requests.get(url, headers=self.headers, timeout=15) # Use session headers and timeout
 
-    @bot.channel_post_handler(commands=['del'])
-    def handle_channel_rem(message):
-        data = get_mongo()
-        if message.text.startswith('/del ') and message.text[5:].startswith('@'):
-            if message.text[5:] not in username:
-                bot.reply_to(message, f'{message.text[5:]} User is not included...')
-            else:
-                del data["usernames"][message.text[5:]]
-                bot.reply_to(message, f'{message.text[5:]} is Deleteded\n-------〵(•ʘ̥ᴗʘ̥ •〵)-------')
-                mongo_update(data)
+                    if response.status_code != 200:
+                        print(f"Failed to fetch page for {username}. Status: {response.status_code}")
+                        all_tweets.append({username: []}) # Append empty list for failed user
+                        continue # Skip to the next username
 
-                #restart_program()
+                    soup = BeautifulSoup(response.text, 'html.parser')
 
+                    # Find the main timeline items
+                    tweets = soup.select('.timeline-item')
+                    print(f"Found {len(tweets)} potential tweets for {username}")
 
-    @bot.channel_post_handler(commands=['ls'])
-    def handle_channel_ls(message):
-        if message.text.startswith('/ls'):
-            bot.reply_to(message, f'{username} Total account is: {len(username)}\n╭∩╮(︶0︶)╭∩╮    ╭∩╮(︶0︶)╭∩╮    ╭∩╮(︶0︶)╭∩╮')
+                    for tweet in tweets:
+                        tweet_dict = {} # Initialize tweet_dict for each tweet
 
-    @bot.channel_post_handler(commands=['replies'])
-    def handle_channel_replies(message):
-        replies = data["replies"]
-        data["replies"] = not replies
-        bot.reply_to(message, f'THE REPLIES HAVE BEEN CHANGED : {data["replies"]}')
-        mongo_update(data, remove=False, set_empty=False)
+                        link_tag = tweet.select_one('.tweet-link')
+                        date_tag = tweet.select_one('.tweet-date a')
+                        content_tag = tweet.select_one('.tweet-content')
+                        body = tweet.select_one('.tweet-body')
 
+                        # Extract basic tweet information
+                        tweet_link = link_tag['href'] if link_tag else None
+                        tweet_date = date_tag['title'] if date_tag else None
+                        tweet_id = tweet_link.split('/')[-1].replace('#m', '') if tweet_link else None # Handle the #m suffix
 
-    bot.polling()
-
-
-
-
-#####################################################################
-def get_tweet_by_userid(usernames_id, usernames, replies=True):
-    """
-    Retrieves tweets from the specified usernames.
-
-    usernames_id: list of usernames
-    replies: whether to include replies (default: True)
-
-    Returns: a list of scraped tweets
-    """
-    all_tweets = []
-    try:
-        cookies = next(values_generator)
-        scraper = Scraper(cookies=cookies)
-        if replies is True:
-            scraped_tweets = scraper.tweets_and_replies(usernames_id, limit=10, pbar=True)
-        else:
-            scraped_tweets = scraper.tweets(usernames_id, limit=10)
-        if len(scraped_tweets) < len(usernames_id):
-            return([[]]*len(scraped_tweets))
-        piner = 0
-        for p, tweets_new in enumerate(scraped_tweets):
-            tweets_list = []
-            try:
-                pin_check = tweets_new["data"]["user"]["result"]["timeline_v2"]["timeline"]["instructions"]
-                if "Pin" in pin_check[1]["type"] and piner == 0:
-                    tweet_new = pin_check[1]["entry"]["content"]["itemContent"]["tweet_results"]["result"]["legacy"]
-
-                    tweet_new = (
-                        True,
-                        tweet_new["id_str"],
-                        tweet_new["full_text"],
-                        tweet_new["created_at"],
-                        f"https://vxtwitter.com/{usernames[p]}/status/{tweet_new['id_str']}"
-                    )
-                    tweets_list.append(tweet_new)
-                    piner = 1
-
-                tweets = tweets_new["data"]["user"]["result"]["timeline_v2"]["timeline"]["instructions"][-1]["entries"]
-
-                for j, tweet in enumerate(tweets):
-                    try:
-                        if "promoted" in tweet["entryId"]:
-                            continue
-                        if "conversation" in tweet["entryId"]:
-                            tweet_new = tweet["content"]["items"][-1]["item"]["itemContent"]["tweet_results"]["result"]["legacy"]
-                        elif "tweet" in tweet["entryId"]:
-                            #return tweet["content"]
-                            tweet_new = tweet["content"]["itemContent"]["tweet_results"]["result"]["legacy"]
+                        # Extract tweet content, handling retweets and replies
+                        raw_text = content_tag.get_text(strip=True) if content_tag else ""
+                        if body and body.select_one('.retweet-header'):
+                            tweet_text = f"RT: {raw_text}"
+                        elif body and body.select_one('.replying-to'):
+                            replying_to_text = body.select_one('.replying-to').get_text()
+                            tweet_text = f"{replying_to_text.replace('Replying to ', '')} {raw_text}"
                         else:
-                            continue
+                            tweet_text = raw_text
 
-                        tweet_new = (
-                            False,
-                            tweet_new["id_str"],
-                            tweet_new["full_text"],
-                            tweet_new["created_at"],
-                            f"https://vxtwitter.com/{usernames[p][1:]}/status/{tweet_new['id_str']}"
-                        )
-                        tweets_list.append(tweet_new)
-                    except:
-                        pass
-            except Exception as e:
-                print(f"There is an error : {e}")
-            all_tweets.append(tweets_list)
+                        # Prepare the tweet data dictionary
+                        tweet_data = {
+                            "ID": tweet_id,
+                            "TEXT": tweet_text,
+                            "TIME": (datetime.strptime(tweet_date.replace(" UTC", ""), "%b %d, %Y · %I:%M %p") + timedelta(hours=3)).strftime("%b %d, %Y · %I:%M %p"),
+                            "URL": f"http://vxtwitter.com{tweet_link}" if tweet_link else None,
+                            "STATS": {} # Placeholder for stats if needed later
+                        }
+                        tweets_list.append(tweet_data)
 
-    except Exception as e:
-        print("There is an error on the main loop ===============================")
-    print(all_tweets)
-    return all_tweets
+                except Exception as e:
+                    print(f"Error processing tweets for {username}: {e}")
+                    # If an error occurs for a specific user, append an empty list for that user
+                    all_tweets.append({username: []})
+                    continue # Continue to the next username
 
+                # After processing all tweets for a user, append the list to all_tweets
+                all_tweets.append({username: tweets_list})
 
+        except Exception as e:
+            print(f"Error in the main user loop: {e}")
+            # Handle global errors if necessary, though user-specific errors are handled above
 
-
-
-
-
-print('/////////PROGRAM RUNNING////////')
-
-def main_function():
-  #start_time_main = time.time()
-  try:
-      iter = 0
-      data = get_mongo()
-      usernames = [i for i in data["usernames"] if data["usernames"][i]["Active"]]
-      USER_ID = []
-      for username in usernames:
-          if data["usernames"][username]["Active"]:
-            USER_ID.append(data["usernames"][username]["User_ID"])
+        return all_tweets
 
 
-      all_data = get_tweet_by_userid(USER_ID, usernames)
+    def tg_sender(self, data):
+        """Sends new tweets to Telegram and updates MongoDB."""
+        try:
+            for d in data:
+                for user, tweets in d.items():
+                    if not isinstance(tweets, list):  
+                        print(f"Skipping invalid data for {user}: {tweets}")
+                        continue
+                    
+                    ids = {tweet["ID"] for tweet in tweets}  # Use set for uniqueness
+                    existing_user = self.collection.find_one({"user": user}, {"tweet_ids": 1})
+                    existing_ids = set(existing_user["tweet_ids"]) if existing_user and "tweet_ids" in existing_user else set()
+                    unique_new_ids = sorted(ids - existing_ids)  # Ensure only truly new IDs
 
-      #print(all_data)
-      
-      try:
-          for u, data_new in enumerate(all_data):
-              user_name = usernames[u]
-              tweet_ids = []
-              for j in range(0, len(data["usernames"][user_name]["recent_tweets"])):
-                  tweet_ids.append(data["usernames"][user_name]["recent_tweets"][j]["Tweet_Id"])
-                
-              new_ids = [id[1] for id in data_new]
-              #print(len(new_ids))
-              diff_ids = list(set(new_ids) - set(tweet_ids))
-              #print(len(tweet_ids))
-              data_new = data_new[::-1]
-              #report(f"{user_name} ----- retrieve {len(data_new)} data and got {len(diff_ids)} data")
-              if len(diff_ids) > 0:
-                  for j, new_tweet in enumerate(data_new):
-                      Pin, Id, text, Date, url = new_tweet
-                      if Id in diff_ids:
-                          Date = datetime.strptime(Date, "%a %b %d %H:%M:%S %z %Y").strftime("%b %d, %Y · %I:%M %p UTC")
-                          message = f"""[{user_name}]({url})\n{text}\n\n{Date}"""
-                          new_tweet = {
-                              "Pinned": Pin,
-                              "Tweet_Id": Id,
-                              "Text": text,
-                              "Tweet_date": Date,
-                              "Tweet_URL": url
-                          }
-                          if Pin is True:
-                              data["usernames"][user_name]["recent_tweets"].insert(0, new_tweet)
-                          else:
-                              data["usernames"][user_name]["recent_tweets"].insert(j, new_tweet) 
-                          data["usernames"][user_name]["total_tweet"] += 1
-                          data["usernames"][user_name]["day_tweets"] += 1
-                          mongo_update(data)
-                          print(iter)
-                          print(message)
-                          iter += 1
-                          #report(message)
-      except Exception as e:
-          print(f"There is an error at the message sender of {user_name} ::  {e}")
-
-  except Exception as e:
-      print(f"There is an error in main function ::  {e}")
-
-  print("Function Finished!!!!!")
-
-
+                    if unique_new_ids:
+                        for unique_id in unique_new_ids:
+                            try:
+                                unique_tweet = next((t for t in tweets if t["ID"] == unique_id), None)
+                                if not unique_tweet:
+                                    print(f"Tweet ID {unique_id} not found for {user}. Skipping.")
+                                    continue
+                                
+                                message = f"""{formatting.mbold(' 🎉 New Tweet from')} [{formatting.escape_markdown(user)}]({unique_tweet["URL"]})\n\n{"💬 " if unique_tweet["TEXT"].startswith("@") else "🐦 "}{formatting.escape_markdown(unique_tweet["TEXT"])}\n\n{formatting.mbold("📅 Date: ")}{formatting.escape_markdown(str(unique_tweet["TIME"]))}"""
+                                
+                                if self.report(message):
+                                    print(f"Sent tweet {unique_id} for user {user}")
+                                    self.collection.find_one_and_update(
+                                        {"user": user},
+                                        {"$addToSet": {"tweet_ids": unique_id}},
+                                        upsert=True
+                                    )
+                            except Exception as e:
+                                print(f"Final Error processing tweet ID {unique_id} for user {user}: {e}")
+                    else:
+                        print(f"No new tweets for {user}.")
+        except Exception as e:
+            print(f"General processing error: {e}")
