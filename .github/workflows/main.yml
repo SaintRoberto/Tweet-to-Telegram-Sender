@@ -1,0 +1,27 @@
+name: Enviar Tweets a Telegram
+on:
+  schedule:
+    - cron: '*/30 * * * *' # Revisa cada 30 minutos
+  workflow_dispatch: # Permite que tú lo actives cuando quieras
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Instalar dependencias
+        run: pip install requests
+
+      - name: Ejecutar Bot
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_TO: ${{ secrets.TELEGRAM_TO }}
+          TWITTER_USER: ${{ secrets.TWITTER_USER }}
+        run: python main.py
