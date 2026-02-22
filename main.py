@@ -32,7 +32,7 @@ def check_nitter():
             
     except Exception as e:
         print(f"Error inesperado: {e}")
-
+        
 def send_telegram(text):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     payload = {"chat_id": CHAT_ID, "text": text, "parse_mode": "Markdown"}
