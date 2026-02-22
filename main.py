@@ -8,7 +8,7 @@ USER = os.getenv("TWITTER_USER")
 
 def check_nitter():
     # Intentamos con una instancia de Nitter diferente y más estable
-    url = f"https://nitter.poast.org/{USER}/rss"
+    url = f"https://nitter.net/{USER}/rss"
     print(f"Buscando tweets de: {USER}...")
     
     try:
