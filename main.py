@@ -7,31 +7,40 @@ CHAT_ID = os.getenv("TELEGRAM_TO")
 USER = os.getenv("TWITTER_USER")
 
 def check_nitter():
-    # Usamos la dirección nitter.net que confirmaste
-    url = f"https://nitter.net/{USER}/rss"
-    print(f"Buscando tweets en: {url}")
+    # Lista de servidores alternativos (si uno falla, prueba el otro)
+    instancias = [
+        f"https://nitter.privacydev.net/{USER}/rss",
+        f"https://nitter.poast.org/{USER}/rss",
+        f"https://nitter.net/{USER}/rss",
+        f"https://xcancel.com/{USER}/rss"
+    ]
     
-    try:
-        response = requests.get(url, timeout=20)
-        if response.status_code == 200:
-            root = ET.fromstring(response.content)
-            item = root.find(".//item")
+    for url in instancias:
+        print(f"Intentando con: {url}")
+        try:
+            # Añadimos un "User-Agent" para que el servidor no nos bloquee pensando que somos un bot simple
+            headers = {'User-Agent': 'Mozilla/5.0'}
+            response = requests.get(url, headers=headers, timeout=15)
             
-            if item is not None:
-                title = item.find("title").text
-                link = item.find("link").text
+            if response.status_code == 200 and len(response.content) > 100:
+                root = ET.fromstring(response.content)
+                item = root.find(".//item")
                 
-                # Convertimos el link a Twitter original para que abra bien en el celular
-                link_twitter = link.replace("nitter.net", "twitter.com").replace("#m", "")
-                
-                mensaje = f"📢 *NUEVO REPORTE:*\n\n{title}\n\n🔗 {link_twitter}"
-                send_telegram(mensaje)
+                if item is not None:
+                    title = item.find("title").text
+                    link = item.find("link").text
+                    link_twitter = link.replace(url.split('/')[2], "twitter.com").replace("#m", "")
+                    
+                    mensaje = f"📢 *NUEVO REPORTE de {USER}:*\n\n{title}\n\n🔗 {link_twitter}"
+                    send_telegram(mensaje)
+                    return  # ¡ÉXITO! Salimos del programa.
+                else:
+                    print("Servidor respondió pero no hay tweets.")
             else:
-                print("No hay tweets disponibles en este momento.")
-        else:
-            print(f"Error en Nitter: {response.status_code}")
-    except Exception as e:
-        print(f"Error: {e}")
+                print(f"Fallo o respuesta vacía (Código: {response.status_code})")
+                
+        except Exception as e:
+            print(f"Error en esta instancia: {e}")
 
 def send_telegram(text):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
