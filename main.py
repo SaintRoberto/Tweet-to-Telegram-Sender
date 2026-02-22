@@ -34,12 +34,7 @@ def check_nitter():
 
     # Instancias de auxilio
     # Lista de servidores alternativos (si uno falla, prueba el otro)
-    instancias = [
-        f"https://nitter.privacydev.net/{USER}/rss",
-        f"https://nitter.poast.org/{USER}/rss",
-        f"https://nitter.net/{USER}/rss",
-        f"https://xcancel.com/{USER}/rss"
-    ]
+    instancias = ["https://nitter.privacydev.net", "https://nitter.net", "https://nitter.poast.org", "https://xcancel.com"]
     nuevos_enviados = enviados.copy()
 
     for usuario in CUENTAS:
