@@ -9,7 +9,7 @@ USER = os.getenv("TWITTER_USER")
 
 def check_nitter():
     # Usamos una instancia estable de Nitter
-    url = f"https://xcancel.com/{USER}/rss"
+    url = f"https://nitter.net/{USER}/rss"
     response = requests.get(url)
     
     if response.status_code == 200:
