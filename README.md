@@ -2,7 +2,7 @@
 
 Scraping tweets has become increasingly difficult without paying high API fees or relying on third-party services like Nitter. However, since Nitter often imposes timeouts and access limits, this project recommend using private instance.
 
-This Python bot scrapes tweets from Nitter, stores them in MongoDB, and sends new tweet alerts to a Telegram channel — all without using the official Twitter API.
+This Python bot scrapes tweets from Nitter, stores, and sends new tweet alerts to a Telegram channel — all without using the official Twitter API.
 
 
 ## 📸 Preview
@@ -14,7 +14,6 @@ This Python bot scrapes tweets from Nitter, stores them in MongoDB, and sends ne
 ## 🚀 Features
 
 * 🧩 **Nitter Scraper** — use your own instance.
-* 💾 **MongoDB Storage** — Keeps track of tweet IDs to avoid duplicate alerts.
 * 📢 **Telegram Integration** — Sends formatted tweet notifications to your Telegram channel.
 * 🧠 **Randomized Headers** — Generates unique HTTP headers and cookies on every request to bypass scraping restrictions.
 * ⚙️ **Error Handling** — Manages connection and parsing errors per user gracefully.
@@ -23,7 +22,6 @@ This Python bot scrapes tweets from Nitter, stores them in MongoDB, and sends ne
 ## 🧰 Requirements
 
 * Python **3.8+**
-* A **MongoDB** instance (local or cloud)
 * A **Telegram Bot API Key** (from [@BotFather](https://t.me/BotFather))
 
 
