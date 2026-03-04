@@ -5,49 +5,47 @@ import xml.etree.ElementTree as ET
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_TO")
 
-# Lista de cuentas a vigilar
-CUENTAS = ["EmergenciasEc", "segura_ep", "ECU911_", "Cupsfire_gye", "BomberosQuito", "BomberosGYE"]
+def cargar_lista(archivo):
+    if os.path.exists(archivo):
+        with open(archivo, "r", encoding="utf-8") as f:
+            return [line.strip().lower() for line in f if line.strip()]
+    return []
 
-# Tus palabras clave para filtrar
-CATEGORIAS = {
-    "lluvia": ["lluvia", "inundacion", "inundación", "deslizamiento", "derrumbe", "desbordamiento", "tormenta", "rayo", "granizada", "aluvion", "aluvión", "deslave", "crecida"],
-    "incendio": ["incendio", "fuego", "conato", "forestal", "quema", "maleza"],
-    "sismo": ["temblor", "sismo", "terremoto", "telúrico", "colapso"],
-    "tsunami": ["tsunami", "olas gigantes", "mar recogido"],
-    "sequia": ["sequia", "sequía", "déficit hídrico", "estiaje"]
-}
-
-def es_relevante(texto):
+def es_relevante(texto, palabras_clave):
     texto = texto.lower()
-    for palabras in CATEGORIAS.values():
-        if any(p in texto for p in palabras):
-            return True
-    return False
+    return any(p in texto for p in palabras_clave)
 
 def check_nitter():
-    # Memoria para no repetir
+    cuentas = cargar_lista("cuentas.txt")
+    palabras = cargar_lista("palabras.txt")
+    
+    if not cuentas or not palabras:
+        print("Error: cuentas.txt o palabras.txt están vacíos.")
+        return
+
+    # Memoria de IDs
     if os.path.exists("last_id.txt"):
         with open("last_id.txt", "r") as f:
-            enviados = f.read().splitlines()
+            enviados = set(f.read().splitlines())
     else:
-        enviados = []
+        enviados = set()
 
-    # Instancias de auxilio
-    # Lista de servidores alternativos (si uno falla, prueba el otro)
     instancias = ["https://nitter.privacydev.net", "https://nitter.net", "https://nitter.poast.org", "https://xcancel.com"]
-    nuevos_enviados = enviados.copy()
+    nuevos_ids = list(enviados)
 
-    for usuario in CUENTAS:
+    print(f"Iniciando escaneo de {len(cuentas)} cuentas...")
+
+    for usuario in cuentas:
         exito_usuario = False
         for base_url in instancias:
             if exito_usuario: break
             url = f"{base_url}/{usuario}/rss"
             try:
                 headers = {'User-Agent': 'Mozilla/5.0'}
-                response = requests.get(url, headers=headers, timeout=15)
+                response = requests.get(url, headers=headers, timeout=10)
                 if response.status_code == 200 and len(response.content) > 100:
                     root = ET.fromstring(response.content)
-                    items = root.findall(".//item")[:5] # Revisa los 5 más nuevos
+                    items = root.findall(".//item")[:3] 
                     
                     for item in items:
                         title = item.find("title").text
@@ -55,23 +53,22 @@ def check_nitter():
                         tweet_id = link.split('/')[-1].split('#')[0]
 
                         if tweet_id not in enviados:
-                            if es_relevante(title):
-                                # Convertimos a URL de X.com limpia (mensaje pelado)
+                            if es_relevante(title, palabras):
                                 link_x = f"https://x.com/{usuario}/status/{tweet_id}"
                                 send_telegram(link_x)
-                                nuevos_enviados.append(tweet_id)
+                                enviados.add(tweet_id)
+                                nuevos_ids.append(tweet_id)
                         
                     exito_usuario = True
             except Exception:
                 continue
 
-    # Guardar memoria (mantenemos los últimos 50)
+    # Guardar memoria (mantenemos los últimos 200 para evitar spam)
     with open("last_id.txt", "w") as f:
-        f.write("\n".join(nuevos_enviados[-50:]))
+        f.write("\n".join(nuevos_ids[-200:]))
 
 def send_telegram(text):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    # Enviamos solo el link
     requests.post(url, json={"chat_id": CHAT_ID, "text": text})
 
 if __name__ == "__main__":
