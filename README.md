@@ -1,4 +1,4 @@
-# 🛡️ Sngre: Emergency & News Monitor (Twitter to Telegram)
+# 🛡️ Sngr: Emergency & News Monitor (Twitter to Telegram)
 
 An automated Python-based intelligence and filtering system. This bot monitors multiple security and emergency Twitter accounts, filters content based on specific risk keywords (wildfires, earthquakes, floods, etc.), and dispatches real-time alerts to a Telegram channel.
 
