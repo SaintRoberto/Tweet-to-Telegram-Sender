@@ -15,6 +15,7 @@ ECU911Austro
 ECU911Ambato
 NOTICotopaxi
 ECU911Machala1
+machalamovil
 GoberElOro
 unsiontv
 emov_ep
