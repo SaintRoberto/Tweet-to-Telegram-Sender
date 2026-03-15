@@ -112,3 +112,4 @@ GoberZamoraCH
 MinGobiernoEc
 ComunicacionEc
 _ElOrense
+wenewsec
