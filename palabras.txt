@@ -43,3 +43,181 @@ vías cerradas
 paso restringido
 vialidad
 estado de vías
+Enfermedad de cultivos
+Plaga
+Epidemia
+Pandemia
+Epizootia
+Zoonosis
+Caída de meteorito
+Caida de meteorito
+Tormenta de radiación solar
+Tormenta de radiacion solar
+Aluvión (Flujos)
+Aluvion (Flujos)
+Avalancha
+Caídas (Colapso)
+Caidas (Colapso)
+Deslizamiento
+Hundimiento
+Reptación
+Reptacion
+Sismo
+Erupción volcánica
+Erupcion volcanica
+Déficit hídrico
+Deficit hidrico
+Erosión hídrica
+Erosion hidrica
+Exceso de humedad
+Inundación
+Inundacion
+Erosión eólica
+Erosion eolica
+Granizada
+Helada
+Lluvias intensas
+Nevada
+Ola de frío
+Ola de frio
+Ola de calor
+Sequía
+Sequia
+Torbellino (Remolino de viento)
+Tormenta eléctrica
+Tormenta electrica
+Tromba marina
+Vendaval
+Corrientes de resaca
+Erosión Costera
+Erosion Costera
+Oleaje
+Remolino de mar (Resaca)
+Tsunami
+Conmoción social
+Conmocion social
+Crisis de movilidad humana
+Disturbios en eventos masivos
+Contaminación química
+Contaminacion quimica
+Contaminación de relaves
+Contaminacion de relaves
+Contaminación radiactiva
+Contaminacion radiactiva
+Degradación del agua
+Degradacion del agua
+Degradación del suelo
+Degradacion del suelo
+Desertificación
+Desertificacion
+Salinización del agua
+Salinizacion del agua
+Salinización del suelo
+Salinizacion del suelo
+Incendio estructural
+Incendio de interfase
+Incendio forestal
+Incendio industrial
+Incendios en vertederos o en rellenos sanitarios
+Accidente aéreo
+Accidente aereo
+Accidente en medios acuáticos
+Accidente en medios acuaticos
+Accidente industrial (NATECH)
+Accidente minero
+Accidente masivo de transporte terrestre
+Desechos espaciales
+Intoxicación masiva
+Intoxicacion masiva
+Ataque biológico
+Ataque biologico
+Ataque nuclear
+Ataque químico
+Ataque quimico
+Ataque radiológico
+Ataque radiologico
+Ataque cibernético
+Ataque cibernetico
+Colapso en infraestructura
+Explosión
+Explosion
+Fallo generalizado de servicios esenciales
+Flujo de detritos
+Flujo de lodo
+Avalancha de detritos
+Avalancha de lodo
+Avalancha de nieve
+Caída de roca
+Caida de roca
+Caída de suelo (no consolidado)
+Caida de suelo (no consolidado)
+Deslizamiento rotacional
+Deslizamiento traslacional
+Hundimiento súbito
+Hundimiento subito
+Subsidencia
+Sismo cortical (falla geológica)
+Sismo cortical (falla geologica)
+Sismo de subducción (placas)
+Sismo de subduccion (placas)
+Sismo volcánico
+Sismo volcanico
+Avalancha de escombros
+Caída de ceniza
+Caida de ceniza
+Flujos de lava
+Flujos piroclásticos
+Flujos piroclasticos
+Gases volcánicos
+Gases volcanicos
+Lahares
+Ondas de presión atmosférica
+Ondas de presion atmosferica
+Inundación costera
+Inundacion costera
+Inundación fluvial
+Inundacion fluvial
+Inundación lacustre
+Inundacion lacustre
+Inundación pluvial
+Inundacion pluvial
+Sequía agrícola
+Sequia agricola
+Sequía hidrológica
+Sequia hidrologica
+Sequía meteorológica
+Sequia meteorologica
+Sequía socioeconómica
+Sequia socioeconomica
+Oleaje extremo
+Oleaje normal
+Tsunami local
+Tsunami regional
+Tsunami lejano
+Contaminación atmosférica
+Contaminacion atmosferica
+Contaminación de acuíferos
+Contaminacion de acuiferos
+Contaminación de agua
+Contaminacion de agua
+Contaminación de suelo
+Contaminacion de suelo
+Contaminación marina y costera
+Contaminacion marina y costera
+Accidente de aeronave
+Accidente espacial
+Accidente ferroviario
+Colapso en elementos estructurales
+Colapso en elementos no estructurales
+Explosión por GLP
+Explosion por GLP
+Explosión por MATPEL
+Explosion por MATPEL
+Explosión por pirotecnia
+Explosion por pirotecnia
+Explosión por atentado
+Explosion por atentado
+Corte generalizado del servicio de agua
+Corte generalizado de energía eléctrica
+Corte generalizado de energia electrica
+Corte generalizado de telecomunicaciones
