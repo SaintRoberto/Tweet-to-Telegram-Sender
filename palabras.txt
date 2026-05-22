@@ -23,6 +23,7 @@ fuego en vivienda
 quema de maleza
 temblor
 sismo
+erosión
 terremoto
 fuerte sismo
 movimiento telúrico
@@ -89,7 +90,6 @@ Tormenta electrica
 Tromba marina
 Vendaval
 Corrientes de resaca
-erosión
 Erosión Costera
 Erosion Costera
 Oleaje
