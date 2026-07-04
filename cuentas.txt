@@ -189,3 +189,6 @@ telepremier
 corteInforma
 RadioPlayInter
 oromartv
+TiempoRealEC
+Rodrigoperiodis
+lodelmomentoloj
