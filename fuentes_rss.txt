@@ -1,0 +1,8 @@
+# Fuentes RSS. Se prueban en este orden.
+# {usuario} se reemplaza automáticamente por la cuenta de X.
+
+https://fxtwitter.com/{usuario}/feed.xml
+https://nitter.kareem.one/{usuario}/rss
+https://nitter.privacydev.net/{usuario}/rss
+https://nitter.net/{usuario}/rss
+https://nitter.poast.org/{usuario}/rss
