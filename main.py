@@ -40,11 +40,11 @@ def check_nitter():
         enviados = set()
 
     instancias = [
+        "https://nitter.kareem.one",
         "https://nitter.privacydev.net",
         "https://nitter.net",
         "https://nitter.poast.org",
-        "https://xcancel.com",
-        "https://nitter.kareem.one"
+        "https://xcancel.com",       
     ]
 
     nuevos_ids = list(enviados)
