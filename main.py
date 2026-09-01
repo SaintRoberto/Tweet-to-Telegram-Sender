@@ -43,7 +43,8 @@ def check_nitter():
         "https://nitter.privacydev.net",
         "https://nitter.net",
         "https://nitter.poast.org",
-        "https://xcancel.com"
+        "https://xcancel.com",
+        "https://nitter.kareem.one"
     ]
 
     nuevos_ids = list(enviados)
