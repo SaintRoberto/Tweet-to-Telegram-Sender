@@ -4,6 +4,12 @@ on:
     - cron: '*/5 * * * *'
   workflow_dispatch:
 
+# Impide que dos ejecuciones lean la misma memoria y envíen el mismo tuit.
+# Una ejecución nueva espera a que termine la anterior.
+concurrency:
+  group: telegram-sender
+  cancel-in-progress: false
+
 jobs:
   run-bot:
     runs-on: ubuntu-latest
@@ -11,15 +17,20 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Configurar Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
       - name: Instalar dependencias
-        run: pip install requests
+        run: pip install -r requirements.txt
+
+      - name: Verificar deduplicación
+        run: python -m unittest -v
 
       - name: Ejecutar Bot
         env:
@@ -29,9 +40,14 @@ jobs:
         run: python main.py
 
       - name: Guardar memoria del bot
+        if: always()
         run: |
           git config --global user.name "GitHub Action Bot"
           git config --global user.email "actions@github.com"
-          git add last_id.txt || true
-          git commit -m "Actualizar memoria de tweets" || true
-          git push || true
+          git add last_id.txt
+          if git diff --cached --quiet; then
+            echo "La memoria no cambió."
+            exit 0
+          fi
+          git commit -m "Actualizar memoria de tweets"
+          git push origin HEAD:main

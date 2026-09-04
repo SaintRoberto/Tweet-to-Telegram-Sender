@@ -1,0 +1,4 @@
+__pycache__/
+*.py[cod]
+geo_cache.json
+geo_cache.json.tmp

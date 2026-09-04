@@ -6,6 +6,7 @@ import time
 import html
 import unicodedata
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_TO")
@@ -13,6 +14,12 @@ CHAT_ID = os.getenv("TELEGRAM_TO")
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 NOMINATIM_DELAY = 1.1
 GEO_CACHE_FILE = "geo_cache.json"
+HISTORY_FILE = Path("last_id.txt")
+
+# Hay 194 cuentas y se leen hasta 3 publicaciones por cuenta. El límite
+# anterior de 200 IDs no alcanzaba ni para conservar un escaneo completo:
+# los IDs olvidados volvían a Telegram en la siguiente ejecución.
+MAX_HISTORY_IDS = int(os.getenv("MAX_HISTORY_IDS", "20000"))
 
 NOMINATIM_USER_AGENT = os.getenv(
     "NOMINATIM_USER_AGENT",
@@ -758,11 +765,50 @@ def extraer_tweet_id(link):
     )
 
 
+def cargar_historial(archivo=HISTORY_FILE):
+    archivo = Path(archivo)
+
+    if not archivo.exists():
+        return []
+
+    historial = []
+    vistos = set()
+
+    with archivo.open("r", encoding="utf-8") as f:
+        for line in f:
+            tweet_id = line.strip()
+
+            if not tweet_id or tweet_id in vistos:
+                continue
+
+            vistos.add(tweet_id)
+            historial.append(tweet_id)
+
+    return historial
+
+
+def guardar_historial(historial, archivo=HISTORY_FILE):
+    archivo = Path(archivo)
+    historial = historial[-MAX_HISTORY_IDS:]
+    temporal = archivo.with_suffix(archivo.suffix + ".tmp")
+
+    temporal.write_text(
+        "\n".join(historial) + ("\n" if historial else ""),
+        encoding="utf-8"
+    )
+
+    # Reemplazo atómico: nunca deja last_id.txt incompleto si el proceso falla.
+    os.replace(temporal, archivo)
+
+
 def marcar_procesado(
     tweet_id,
     enviados,
     nuevos_ids
 ):
+    if tweet_id in enviados:
+        return
+
     enviados.add(
         tweet_id
     )
@@ -804,23 +850,7 @@ def check_nitter():
 
         return
 
-    if os.path.exists(
-        "last_id.txt"
-    ):
-        with open(
-            "last_id.txt",
-            "r",
-            encoding="utf-8"
-        ) as f:
-
-            historial_ids = [
-                line.strip()
-                for line in f
-                if line.strip()
-            ]
-
-    else:
-        historial_ids = []
+    historial_ids = cargar_historial()
 
     enviados = set(
         historial_ids
@@ -1116,15 +1146,24 @@ def check_nitter():
                         f"{link_x}"
                     )
 
-                    send_telegram(
-                        link_x
-                    )
+                    enviado_correctamente = send_telegram(link_x)
+
+                    if not enviado_correctamente:
+                        print(
+                            f"NO REGISTRADO @{usuario}: Telegram no "
+                            "confirmó el envío; se reintentará después."
+                        )
+                        continue
 
                     marcar_procesado(
                         tweet_id,
                         enviados,
                         nuevos_ids
                     )
+
+                    # Persistir inmediatamente después de un envío exitoso.
+                    # Así, si el proceso falla más adelante, este ID no se pierde.
+                    guardar_historial(nuevos_ids)
 
                 exito_usuario = True
 
@@ -1154,17 +1193,12 @@ def check_nitter():
                 f"@{usuario}"
             )
 
-    with open(
-        "last_id.txt",
-        "w",
-        encoding="utf-8"
-    ) as f:
+    guardar_historial(nuevos_ids)
 
-        f.write(
-            "\n".join(
-                nuevos_ids[-200:]
-            )
-        )
+    print(
+        f"Memoria actualizada: {min(len(nuevos_ids), MAX_HISTORY_IDS)} "
+        f"IDs conservados (máximo {MAX_HISTORY_IDS})."
+    )
 
 
 def send_telegram(text):
@@ -1181,7 +1215,7 @@ def send_telegram(text):
             "de entorno."
         )
 
-        return
+        return False
 
     url = (
         f"https://api.telegram.org/"
@@ -1215,11 +1249,17 @@ def send_telegram(text):
                 f"{response.text[:200]}"
             )
 
+            return False
+
+        return True
+
     except requests.RequestException as e:
         print(
             f"Error enviando "
             f"a Telegram: {e}"
         )
+
+        return False
 
 
 if __name__ == "__main__":
