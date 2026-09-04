@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -7,6 +8,20 @@ import main
 
 
 class HistorialTests(unittest.TestCase):
+    def test_tuit_de_dos_dias_se_descarta_como_antiguo(self):
+        ahora = datetime(2026, 9, 4, 15, 0, tzinfo=timezone.utc)
+
+        self.assertTrue(
+            main.es_tweet_antiguo("2095193092861120687", ahora)
+        )
+
+    def test_tuit_reciente_no_se_descarta(self):
+        ahora = datetime(2026, 9, 4, 15, 0, tzinfo=timezone.utc)
+
+        self.assertFalse(
+            main.es_tweet_antiguo("2095681752182423771", ahora)
+        )
+
     def test_un_tuit_repetido_no_se_agrega_dos_veces(self):
         enviados = {"2095681752182423771"}
         historial = ["2095681752182423771"]

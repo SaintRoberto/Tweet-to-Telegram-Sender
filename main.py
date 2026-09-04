@@ -6,6 +6,7 @@ import time
 import html
 import unicodedata
 import xml.etree.ElementTree as ET
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 TOKEN = os.getenv("TELEGRAM_TOKEN")
@@ -20,6 +21,8 @@ HISTORY_FILE = Path("last_id.txt")
 # anterior de 200 IDs no alcanzaba ni para conservar un escaneo completo:
 # los IDs olvidados volvían a Telegram en la siguiente ejecución.
 MAX_HISTORY_IDS = int(os.getenv("MAX_HISTORY_IDS", "20000"))
+MAX_TWEET_AGE_HOURS = int(os.getenv("MAX_TWEET_AGE_HOURS", "24"))
+TWITTER_EPOCH_MS = 1288834974657
 
 NOMINATIM_USER_AGENT = os.getenv(
     "NOMINATIM_USER_AGENT",
@@ -765,6 +768,24 @@ def extraer_tweet_id(link):
     )
 
 
+def fecha_tweet_desde_id(tweet_id):
+    try:
+        timestamp_ms = (int(tweet_id) >> 22) + TWITTER_EPOCH_MS
+        return datetime.fromtimestamp(timestamp_ms / 1000, timezone.utc)
+    except (TypeError, ValueError, OSError, OverflowError):
+        return None
+
+
+def es_tweet_antiguo(tweet_id, ahora=None):
+    fecha_tweet = fecha_tweet_desde_id(tweet_id)
+
+    if fecha_tweet is None:
+        return False
+
+    ahora = ahora or datetime.now(timezone.utc)
+    return ahora - fecha_tweet > timedelta(hours=MAX_TWEET_AGE_HOURS)
+
+
 def cargar_historial(archivo=HISTORY_FILE):
     archivo = Path(archivo)
 
@@ -1069,6 +1090,22 @@ def check_nitter():
                         tweet_id
                         in enviados
                     ):
+                        continue
+
+                    # Un tuit viejo nunca debe reaparecer como alerta nueva,
+                    # incluso si una ejecución anterior no guardó su ID.
+                    if es_tweet_antiguo(tweet_id):
+                        print(
+                            f"ANTIGUO @{usuario}: {tweet_id} "
+                            f"(más de {MAX_TWEET_AGE_HOURS} horas)"
+                        )
+
+                        marcar_procesado(
+                            tweet_id,
+                            enviados,
+                            nuevos_ids
+                        )
+
                         continue
 
                     texto_publicacion = (
